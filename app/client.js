@@ -6,14 +6,22 @@ let count = 0
 
 const wsc = new WebSocket('ws://localhost:8080');
 
-console.log('Connecting...', wsc.url)
-
 wsc.on('open', (err) => {
-    console.log('Connected to server', wsc.url);
 
-    pick().then(( fileContents ) => {
-        console.log('File read complete');
-        wsc.send(fileContents);
+
+    pick('package-lock.json').then(( fileContents ) => {
+        const msg = {
+            type: 'drop',
+            payload: {
+                fileName: 'package-lock.json',
+                fileContents
+            }
+        }
+
+        wsc.send(JSON.stringify(msg));
+    })
+    .catch((err) => {
+        console.log('Err:', err)
     });
 
 });

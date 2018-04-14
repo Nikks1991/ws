@@ -1,3 +1,5 @@
+const { spawn } = require('child_process');
+
 const WebSocket = require('ws');
 
 const { drop } = require('./picknDrop');
@@ -36,8 +38,27 @@ wss.on('connection', function connections(ws) {
     console.log('Client connected...');
 
     ws.on('message', function incomming(data) {
-        console.log('Client:', data);
-        drop(data).then(() => ws.send('File write successful!'));
+        const parsedData = JSON.parse(data);
+        const { type, payload: { fileName, fileContents }} = parsedData;
+
+        if (type === 'drop') {
+            drop(fileName, fileContents).then(() => {
+                const ls = spawn('ls', ['-lh']);
+
+                ls.stdout.on('data', (data) => {
+                    console.log(`stdout: \n ${data}`);
+                });
+
+                ls.stderr.on('data', (err) => {
+                    console.log(`stderr: ${err}`);
+                });
+
+                ls.on('close', (code) => {
+                    console.log(`Exited with error code ${code}`);
+                });
+            });
+        }
+
     });
 
     ws.on('error', function(err) {
